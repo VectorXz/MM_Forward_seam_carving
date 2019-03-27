@@ -1,0 +1,8 @@
+﻿  Source.cpp
+c:\users\msi gs65\source\repos\forwardseamcarving\forwardseamcarving\source.cpp(62): error C3867: 'cv::Mat::clone': non-standard syntax; use '&' to create a pointer to member
+c:\users\msi gs65\source\repos\forwardseamcarving\forwardseamcarving\source.cpp(62): error C2679: binary '=': no operator found which takes a right-hand operand of type 'overloaded-function' (or there is no acceptable conversion)
+  c:\opencv\build\include\opencv2\core\mat.inl.hpp(1360): note: could be 'cv::Mat &cv::Mat::operator =(cv::Mat &&)'
+  c:\opencv\build\include\opencv2\core\mat.hpp(1229): note: or       'cv::Mat &cv::Mat::operator =(const cv::Scalar &)'
+  c:\opencv\build\include\opencv2\core\mat.inl.hpp(3293): note: or       'cv::Mat &cv::Mat::operator =(const cv::MatExpr &)'
+  c:\opencv\build\include\opencv2\core\mat.inl.hpp(696): note: or       'cv::Mat &cv::Mat::operator =(const cv::Mat &)'
+  c:\users\msi gs65\source\repos\forwardseamcarving\forwardseamcarving\source.cpp(62): note: while trying to match the argument list '(cv::Mat, overloaded-function)'
