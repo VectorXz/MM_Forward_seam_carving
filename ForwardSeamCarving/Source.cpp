@@ -14,7 +14,7 @@ using namespace std;
 int main()
 {
 	//Display an Image
-	Mat img = imread("img_lights.jpg", IMREAD_COLOR);
+	Mat img = imread("point.png", IMREAD_COLOR);
 	namedWindow("Example", WINDOW_AUTOSIZE);
 	imshow("Example", img);
 	int c = cvWaitKey(0);
@@ -26,20 +26,21 @@ int main()
 	while (c != 27) {
 		Mat grayimg;
 		Mat grayimg_border;
+		Mat tCol;
 		cvtColor(img, grayimg, COLOR_BGR2GRAY);
 		// Defining M matrix -> to keep energy
 		// Defining K matrix -> to keep best seam
-		Mat M = (Mat_<int>(5, 7));
-		Mat K = (Mat_<int>(5, 7));
+		Mat M = (Mat_<int>(height, width));
+		Mat K = (Mat_<int>(height, width));
 
 		//Mat imgwpad(height + 2, width + 2, CV_8UC1, Scalar(0));
-		Mat original = (Mat_<int>(3, 5) << 14, 24, 35, 13, 100, 36, 18, 11, 20, 60, 21, 19, 72, 120, 14);
+		//Mat original = (Mat_<int>(3, 5) << 14, 24, 35, 13, 100, 36, 18, 11, 20, 60, 21, 19, 72, 120, 14);
 		cout << "Width" << width << "Height" << height << "\n";
-		cout << "Width" << original.cols << "Height" << original.rows << endl;
+		cout << "Width" << grayimg.cols << "Height" << grayimg.rows << endl;
 
 		int border = 1;
-		copyMakeBorder(original, grayimg_border, border, border, border, border, BORDER_REPLICATE);
-		cout << grayimg_border << endl;
+		copyMakeBorder(grayimg, grayimg_border, border, border, border, border, BORDER_REPLICATE);
+		cout << grayimg << endl;
 
 		//Looping till get the command 'a', 'd', 'w', 's'
 		while (c != 97 && c != 100 && c != 119 && c != 27) {
@@ -51,40 +52,104 @@ int main()
 		if (c == 97 || c == 100) {
 			//Construct M matrix and K matrix in vertical direction
 			// *** WRITE YOUR CODE ***
-			
 			//CALCULATE M MATRIX
 			int x, y;
-			for (x = 0; x < grayimg_border.rows; x++)
+			for (x = 0; x < grayimg_border.rows-2; x++)
 			{
-				for (y = 0; y < grayimg_border.cols; y++) {
+				for (y = 0; y < grayimg_border.cols-2; y++) {
 					//cout << x << "|" << y << " ";
-					if (x > 0 && x < grayimg_border.rows-1 && y > 0 && y < grayimg_border.cols-1) {
-						//cout << grayimg_border.at<int>(Point(y, x)) << " ";
-						//calculate Top Left
-						int cl = abs(grayimg_border.at<int>(x, y + 1) - grayimg_border.at<int>(x, y - 1)) + abs(grayimg_border.at<int>(x - 1, y) - grayimg_border.at<int>(x, y - 1));
-						int cu = abs(grayimg_border.at<int>(x, y + 1) - grayimg_border.at<int>(x, y - 1));
-						int cr = abs(grayimg_border.at<int>(x, y + 1) - grayimg_border.at<int>(x, y - 1)) + abs(grayimg_border.at<int>(x - 1, y) - grayimg_border.at<int>(x, y + 1));
-						int tempM[3],min=999;
-						tempM[0] = M.at<int>(x - 1, y - 1) + cl;
-						tempM[1] = M.at<int>(x - 1, y) + cu;
-						tempM[2] = M.at<int>(x - 1, y + 1) + cr;
-						for (int i = 0; i < 3; i++) {
-							if (tempM[i] < min) { min = tempM[i]; }
+					//if it's the first row > just calculate difference of left/right
+					if (x == 0) {
+						M.at<int>(x, y) = abs((int)grayimg_border.at<uchar>(x+1, y) - (int)grayimg_border.at<uchar>(x+1, y+2));
+						// all elements in first row of K matrix are 0
+						K.at<int>(x, y) = 0;
+						//cout << M.at<int>(x, y) << " ";
+					}
+					//else just calculate cl,cu,cr
+					else {
+						int cl = abs((int)grayimg_border.at<uchar>(x, y + 1) - (int)grayimg_border.at<uchar>(x + 1, y)) + abs((int)grayimg_border.at<uchar>(x + 1, y + 2) - (int)grayimg_border.at<uchar>(x + 1, y));
+						int cu = abs((int)grayimg_border.at<uchar>(x, y + 1) - (int)grayimg_border.at<uchar>(x + 1, y));
+						int cr = abs((int)grayimg_border.at<uchar>(x, y + 2) - (int)grayimg_border.at<uchar>(x + 1, y)) + abs((int)grayimg_border.at<uchar>(x + 1, y + 2) - (int)grayimg_border.at<uchar>(x + 1, y));
+						int min;
+						//if y == 0 > no M @ CL > not considering CL to find min
+						if (y == 0) {
+							min = std::min({M.at<int>(x - 1, y) + cu, M.at<int>(x - 1, y + 1) + cr});
+							if (min == (M.at<int>(x - 1, y) + cu)) {
+								K.at<int>(x, y) = 2;
+							}
+							else if (min == (M.at<int>(x - 1, y + 1) + cr)) {
+								K.at<int>(x, y) = 3;
+							}
+						}
+						//if y == last col > no M @ CR > not considering CR to find min
+						else if (y == grayimg_border.cols - 3) {
+							min = std::min({ M.at<int>(x - 1, y - 1) + cl, M.at<int>(x - 1, y) + cu});
+							if (min == (M.at<int>(x - 1, y - 1) + cl)) {
+								K.at<int>(x, y) = 1;
+							}
+							else if (min == (M.at<int>(x - 1, y) + cu)) {
+								K.at<int>(x, y) = 2;
+							}
+						}
+						//else just consider 3 things to find min
+						else {
+							min = std::min({ M.at<int>(x - 1, y - 1) + cl, M.at<int>(x - 1, y) + cu, M.at<int>(x - 1, y + 1) + cr });
+							if (min == (M.at<int>(x - 1, y - 1) + cl)) {
+								//if min = cl > k = 1
+								K.at<int>(x, y) = 1;
+							}
+							else if (min == (M.at<int>(x - 1, y) + cu)) {
+								//if min = cu > k = 2
+								K.at<int>(x, y) = 2;
+							}
+							else if (min == (M.at<int>(x - 1, y + 1) + cr)) {
+								//if min = cr > k = 3
+								K.at<int>(x, y) = 3;
+							}
 						}
 						M.at<int>(x, y) = min;
-					}
-					else
-					{
-						M.at<int>(x, y) = 0;
+						// all elements in first row of K matrix are 0
+						//cout << M.at<int>(x, y) << " ";
 					}
 				}
-				cout << endl;
+				//cout << endl;
 			}
 
 			cout << M << endl;
+			cout << K << endl;
 
 			//Find the best seam in the vertical direction
 			// *** WRITE YOUR CODE ***
+			tCol = (Mat_<int>(1, height));
+			int min = 999;
+			int heightCount = height-1;
+			cout << tCol;
+			for (y = 0; y < width; y++) {
+				if (M.at<int>(height - 1, y) < min) {
+					min = M.at<int>(height - 1, y);
+					tCol.at<int>(0, heightCount) = y;
+				}
+			}
+			printf("Best seam is %d at index %d\n", min, tCol.at<int>(0, heightCount));
+			cout << tCol << endl;
+
+			//printf("heightCount %d\n", heightCount);
+
+			//cout << K.at<int>(heightCount, tCol.at<int>(0, heightCount)) << endl;
+
+			while (heightCount != 0) {
+				if (K.at<int>(heightCount, tCol.at<int>(0, heightCount)) == 1) {
+					tCol.at<int>(0, heightCount-1) = tCol.at<int>(0, heightCount) - 1;
+				}
+				else if (K.at<int>(heightCount, tCol.at<int>(0, heightCount)) == 2) {
+					tCol.at<int>(0, heightCount-1) = tCol.at<int>(0, heightCount);
+				}
+				else if (K.at<int>(heightCount, tCol.at<int>(0, heightCount)) == 3) {
+					tCol.at<int>(0, heightCount-1) = tCol.at<int>(0, heightCount) + 1;
+				}
+				heightCount--;
+			}
+			cout << tCol << endl;
 		}
 
 		//'w' => Increase height, 's' => reduce height
@@ -102,6 +167,7 @@ int main()
 			//Copy the pixels into this image
 			Mat img_new(height, --width, CV_64FC3, Scalar(0, 0, 0));
 			// *** WRITE YOUR CODE ***
+			cout << tCol << endl;
 
 			//Show the resized image
 			imshow("Example", img_new);
